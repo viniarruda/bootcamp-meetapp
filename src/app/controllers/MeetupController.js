@@ -1,6 +1,9 @@
 import * as Yup from 'yup';
-import { isBefore } from 'date-fns';
+import { Op } from 'sequelize';
+import { isBefore, startOfDay, endOfDay, parseISO } from 'date-fns';
 import Meetup from '../models/Meetup';
+import User from '../models/User';
+import File from '../models/File';
 
 class MeetupController {
   async store(req, res) {
@@ -15,6 +18,7 @@ class MeetupController {
     });
 
     const { date } = req.body;
+    const user_id = req.userId;
 
     if (!(await meetupSchema.isValid(req.body))) {
       return res.status(400).json({ error: 'Validation fields' });
@@ -26,18 +30,44 @@ class MeetupController {
 
     const meetup = await Meetup.create({
       ...req.body,
+      user_id,
     });
 
     return res.status(200).json(meetup);
   }
 
   async index(req, res) {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, date } = req.query;
+    const where = {};
 
+    if (date) {
+      const searchDate = parseISO(date);
+
+      where.date = {
+        [Op.between]: [startOfDay(searchDate), endOfDay(searchDate)],
+      };
+    }
     const meetups = await Meetup.findAll({
+      where,
       order: ['date'],
       limit,
       offset: (page - 1) * limit,
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'name'],
+          include: {
+            model: File,
+            as: 'avatar',
+            attributes: ['id', 'path', 'url'],
+          },
+        },
+        {
+          model: File,
+          as: 'banner',
+          attributes: ['id', 'path', 'url'],
+        },
+      ],
     });
 
     return res.json(meetups);

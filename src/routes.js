@@ -14,9 +14,9 @@ const routes = new Router();
 const upload = multer(multerConfig);
 
 routes.post('/auth', AuthController.store);
+routes.post('/users', UserController.store);
 
 routes.use(authMiddleware);
-routes.post('/users', UserController.store);
 routes.put('/users', UserController.update);
 
 routes.get('/meetups', MeetupController.index);
