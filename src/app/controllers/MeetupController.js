@@ -95,7 +95,7 @@ class MeetupController {
 
     if (meetup.user_id !== user_id) {
       return res.status(401).json({
-        error: 'Is only possible to edit meetup that you is organizer',
+        error: 'Is only possible to edit meetup that you is a organizer',
       });
     }
 
