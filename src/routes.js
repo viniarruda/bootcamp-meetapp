@@ -25,6 +25,7 @@ routes.post('/meetups', MeetupController.store);
 routes.put('/meetups', MeetupController.update);
 routes.delete('/meetups', MeetupController.delete);
 
+routes.get('/subscriptions', SubscriptionController.index);
 routes.post('/subscriptions', SubscriptionController.store);
 
 routes.post('/files', upload.single('file'), FileController.store);
