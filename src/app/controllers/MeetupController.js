@@ -39,7 +39,10 @@ class MeetupController {
   async index(req, res) {
     const { page = 1, limit = 10, date } = req.query;
     const where = {};
-
+    /**
+     * @param date
+     * If pass a date, validate the meetups between 00:00 to 23:59
+     */
     if (date) {
       const searchDate = parseISO(date);
 
@@ -71,6 +74,60 @@ class MeetupController {
     });
 
     return res.json(meetups);
+  }
+
+  async update(req, res) {
+    const schema = Yup.object().shape({
+      title: Yup.string().min(3),
+      description: Yup.string(),
+      location: Yup.string(),
+      date: Yup.date(),
+      banner_id: Yup.number(),
+    });
+
+    if (!(await schema.isValid(req.body))) {
+      return res.status(400).json({ error: 'Invalid payload' });
+    }
+
+    const user_id = req.userId;
+
+    const meetup = await Meetup.findByPk(req.query.id);
+
+    if (meetup.user_id !== user_id) {
+      return res.status(401).json({
+        error: 'Is only possible to edit meetup that you is a organizer',
+      });
+    }
+
+    if (isBefore(parseISO(req.body.date), new Date())) {
+      return res.status(401).json({ error: 'Meetup date invalid' });
+    }
+
+    if (meetup.past) {
+      return res.status(400).json({ error: "Can't update past meetups" });
+    }
+
+    await meetup.update(req.body);
+
+    return res.json(meetup);
+  }
+
+  async delete(req, res) {
+    const user_id = req.userId;
+
+    const meetup = await Meetup.findByPk(req.params.id);
+
+    if (meetup.user_id !== user_id) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
+
+    if (meetup.past) {
+      return res.status(401).json({ error: "Can't delete past meetups" });
+    }
+
+    await meetup.destroy();
+
+    return res.send();
   }
 }
 
